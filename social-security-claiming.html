@@ -22,6 +22,7 @@
     --early: #d08a1e;
     --full: #2f7aa8;
     --late: #7b4fb0;
+    --dis: #b8325f;
     --win: #e8f1ec;
     --warn-bg: #fdf3df;
     --warn-ink: #6b4a10;
@@ -38,6 +39,7 @@
       --early: #f0b44d;
       --full: #6cb6e6;
       --late: #c4a3f0;
+      --dis: #f08bb0;
       --win: #1f2d27;
       --warn-bg: #3a2e14;
       --warn-ink: #f3d89c;
@@ -54,6 +56,7 @@
     --early: #f0b44d;
     --full: #6cb6e6;
     --late: #c4a3f0;
+    --dis: #f08bb0;
     --win: #1f2d27;
     --warn-bg: #3a2e14;
     --warn-ink: #f3d89c;
@@ -112,6 +115,7 @@
   .claim-row { display: grid; grid-template-columns: 130px 1fr 1fr; gap: 10px 16px; align-items: end; padding: 10px 0 0; border-top: 1px solid var(--rule); }
   .claim-row .tag { font-weight: 600; border-left: 5px solid var(--c); padding-left: 10px; align-self: center; }
   .claim-row .tag small { display: block; font-weight: 400; color: var(--muted); font-size: 0.82rem; }
+  .claim-row .tag em { font-style: normal; font-weight: 400; color: var(--muted); font-size: 0.82rem; }
   .money-wrap { position: relative; }
   .money-wrap span { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); }
   .money-wrap input { padding-left: 22px; }
@@ -124,7 +128,7 @@
   .banner button { color: inherit; background: transparent; border: 0; text-decoration: underline; cursor: pointer; padding: 0; font-weight: 600; }
 
   /* Claim timeline */
-  .timeline { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); margin: 0 0 28px; }
+  .timeline { position: relative; display: grid; grid-template-columns: repeat(var(--n, 3), 1fr); margin: 0 0 28px; }
   .timeline::before { content: ""; position: absolute; left: 0; right: 0; top: 9px; height: 2px; background: var(--rule); }
   .stop { position: relative; padding: 26px 16px 0 0; }
   .stop::before {
@@ -172,7 +176,7 @@
   .explore .hint { color: var(--muted); font-size: 0.9rem; margin: 0; }
   .explore input[type="range"] { width: 100%; margin: 18px 0 6px; accent-color: var(--full); }
   .range-ends { display: flex; justify-content: space-between; color: var(--muted); font-size: 0.82rem; }
-  .totals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 18px; }
+  .totals { display: grid; grid-template-columns: repeat(var(--n, 3), 1fr); gap: 12px; margin-top: 18px; }
   .total { border: 1px solid var(--rule); border-left: 5px solid var(--c); border-radius: 6px; padding: 12px 14px; }
   .total.best { background: var(--win); }
   .total .label { font-weight: 600; font-size: 0.95rem; }
@@ -213,7 +217,7 @@
 <main>
   <header>
     <h1>When to claim Social Security</h1>
-    <p>Compare starting early, at full retirement age, or delayed, month by month, with or without investing the checks.</p>
+    <p>Compare starting early, at full retirement age, or delayed (or on disability, if that may apply), month by month, with or without investing the checks.</p>
   </header>
 
   <section class="people" aria-label="People">
@@ -275,7 +279,7 @@
       <input type="range" class="rate-range" id="cola-range" min="0" max="6" step="0.1" value="2.5" aria-label="Yearly cost-of-living raise">
     </div>
 
-    <div class="chart-box"><canvas id="chart" role="img" aria-label="Chart comparing the three claiming options by age, with and without investing"></canvas></div>
+    <div class="chart-box"><canvas id="chart" role="img" aria-label="Chart comparing the claiming options by age, with and without investing"></canvas></div>
     <ul class="legend" id="legend"></ul>
     <p class="caption" id="caption"></p>
   </section>
@@ -295,7 +299,7 @@
     <div id="be-rows"></div>
   </section>
 
-  <p class="fine">Enter amounts in today’s dollars, as your Social Security statement shows them. With COLA on, every check rises by the yearly COLA each January after this year, including the years before you claim, the way Social Security applies it. With COLA off, amounts stay exactly as entered. Figures are before taxes and Medicare premiums. Ages are counted from the birth month. Investing assumes every check is invested the month it arrives, nothing is withdrawn, and it compounds monthly at a steady yearly return with no taxes or fees. It’s a what-if, not a forecast. The Example person uses a full-retirement benefit of $2,100, close to the U.S. average for retired workers in 2026, with the standard reductions for claiming at 62 (70%) and credits for waiting to 70 (124%).</p>
+  <p class="fine">Enter amounts in today’s dollars, as your Social Security statement shows them. With COLA on, every check rises by the yearly COLA each January after this year, including the years before you claim, the way Social Security applies it. With COLA off, amounts stay exactly as entered. Figures are before taxes and Medicare premiums. Ages are counted from the birth month. Investing assumes every check is invested the month it arrives, nothing is withdrawn, and it compounds monthly at a steady yearly return with no taxes or fees. It’s a what-if, not a forecast. The optional Disability option is for a possible earlier start if you’re approved for disability benefits; leave it blank to leave it out. A disability benefit is usually about your full-retirement amount, but check your statement for your own estimate. The Example person uses a full-retirement benefit of $2,100, close to the U.S. average for retired workers in 2026, with the standard reductions for claiming at 62 (70%) and credits for waiting to 70 (124%).</p>
 </main>
 
 <dialog id="confirm-dlg">
@@ -321,18 +325,23 @@
 (function () {
   // ---------- Model ----------
   var MONTHS = ["Jan.", "Feb.", "Mar.", "Apr.", "May", "Jun.", "Jul.", "Aug.", "Sep.", "Oct.", "Nov.", "Dec."];
+  // Index k is where the option lives in profile.options. The optional disability
+  // option is stored last (so older saved data still loads) but shown first.
   var TAGS = [
-    { key: "early", tag: "Early",   color: "--early", hint: "First month you can claim" },
-    { key: "full",  tag: "Full",    color: "--full",  hint: "Full retirement age" },
-    { key: "late",  tag: "Delayed", color: "--late",  hint: "Usually age 70" }
+    { key: "early", tag: "Early",      color: "--early", hint: "First month you can claim" },
+    { key: "full",  tag: "Full",       color: "--full",  hint: "Full retirement age" },
+    { key: "late",  tag: "Delayed",    color: "--late",  hint: "Usually age 70" },
+    { key: "dis",   tag: "Disability", color: "--dis",   hint: "Optional: if you’re approved before retirement age", optional: true }
   ];
+  var ORDER = [3, 0, 1, 2];   // earliest to latest
+  function blankOption() { return { claim: "", amount: 0 }; }
   var MAX_AGE = 100;
   var LS_KEY = "retirement-claiming-v1";
   var BASE_YEAR = new Date().getFullYear();   // entered amounts are in this year's dollars
 
   function exampleProfile() {
     return { id: "example", name: "Example", birth: "1970-01",
-      options: [{ claim: "2032-02", amount: 1470 }, { claim: "2037-01", amount: 2100 }, { claim: "2040-01", amount: 2604 }] };
+      options: [{ claim: "2032-02", amount: 1470 }, { claim: "2037-01", amount: 2100 }, { claim: "2040-01", amount: 2604 }, blankOption()] };
   }
   // Built-in starting point: the Example only. Real people come from saved data or Import.
   function defaultState() {
@@ -381,7 +390,7 @@
         id: id,
         name: String(p.name || "Person").slice(0, 40),
         birth: String(p.birth || ""),
-        options: [0, 1, 2].map(function (k) {
+        options: [0, 1, 2, 3].map(function (k) {
           var o = opts[k] || {};
           var amt = Number(o.amount);
           return { claim: String(o.claim || ""), amount: isFinite(amt) ? Math.max(0, Math.round(amt * 100) / 100) : 0 };
@@ -426,16 +435,19 @@
     var birth = parseMonth(p.birth);
     if (birth == null) errors.push("Enter a birth month.");
     var opts = [];
-    p.options.forEach(function (o, k) {
-      var start = parseMonth(o.claim);
+    ORDER.forEach(function (k) {
+      var o = p.options[k] || blankOption();
       var t = TAGS[k];
+      var start = parseMonth(o.claim);
+      // The optional option is simply left out while both of its fields are empty
+      if (t.optional && start == null && !(o.amount > 0) && !String(o.claim || "").trim()) return;
       if (start == null) { errors.push(t.tag + ": enter the month of the first check."); return; }
       if (!(o.amount > 0)) { errors.push(t.tag + ": enter a monthly amount above $0."); return; }
       if (birth != null && start <= birth) { errors.push(t.tag + ": the first check should be after the birth month."); return; }
       opts.push({ key: t.key, tag: t.tag, color: t.color, start: start, amount: o.amount });
     });
     for (var k = 1; k < opts.length; k++) {
-      if (opts[k].start <= opts[k - 1].start) { errors.push("First-check months should go in order: Early, then Full, then Delayed."); break; }
+      if (opts[k].start <= opts[k - 1].start) { errors.push("First-check months should go in order: " + ORDER.map(function (i) { return TAGS[i].tag; }).join(", then ") + "."); break; }
     }
     if (birth == null) return { ok: false, errors: errors, opts: [] };
     opts.forEach(function (o) { o.name = "Age " + Math.floor((o.start - birth) / 12); });
@@ -488,10 +500,10 @@
   }
   function breakEvens(fn) {
     var out = [];
-    var pairs = [[0, 1], [0, 2], [1, 2]];
+    var pairs = [];
+    for (var i = 0; i < P.opts.length; i++) for (var j = i + 1; j < P.opts.length; j++) pairs.push([i, j]);
     pairs.forEach(function (pr) {
       var a = P.opts[pr[0]], b = P.opts[pr[1]];
-      if (!a || !b) return;
       var hit = null;
       for (var m = Math.max(a.start, b.start); m <= P.end; m++) {
         if (fn(b, m) >= fn(a, m)) { hit = m; break; }
@@ -705,9 +717,10 @@
   var fName = document.getElementById("f-name");
   var fBirth = document.getElementById("f-birth");
   var rowsEl = document.getElementById("claim-rows");
-  rowsEl.innerHTML = TAGS.map(function (t, k) {
+  rowsEl.innerHTML = ORDER.map(function (k) {
+    var t = TAGS[k];
     return '<div class="claim-row" style="--c: var(' + t.color + ')">' +
-      '<div class="tag">' + t.tag + '<small>' + t.hint + '</small></div>' +
+      '<div class="tag">' + t.tag + (t.optional ? ' <em>(optional)</em>' : '') + '<small>' + t.hint + '</small></div>' +
       '<label class="fld">First check<input type="month" data-k="' + k + '" data-f="claim" placeholder="YYYY-MM"></label>' +
       '<label class="fld">Monthly amount<span class="money-wrap"><span>$</span><input type="number" min="0" step="1" inputmode="decimal" data-k="' + k + '" data-f="amount"></span></label>' +
       '</div>';
@@ -729,8 +742,10 @@
     var p = active();
     fBirth.setAttribute("aria-invalid", String(parseMonth(p.birth) == null));
     rowsEl.querySelectorAll("input").forEach(function (inp) {
-      var o = p.options[+inp.dataset.k];
+      var k = +inp.dataset.k, o = p.options[k];
       var bad = inp.dataset.f === "claim" ? parseMonth(o.claim) == null : !(o.amount > 0);
+      // An optional option is fine while both its fields are empty
+      if (TAGS[k].optional && !String(o.claim || "").trim() && !(o.amount > 0)) bad = false;
       inp.setAttribute("aria-invalid", String(bad));
     });
   }
@@ -769,6 +784,7 @@
   document.getElementById("add-btn").addEventListener("click", function () {
     var base = active();
     var p = { id: uid(), name: "New person", birth: base.birth, options: base.options.map(function (o) { return { claim: o.claim, amount: o.amount }; }) };
+    while (p.options.length < TAGS.length) p.options.push(blankOption());
     state.profiles.push(p);
     state.activeId = p.id;
     scheduleSave();
@@ -900,6 +916,7 @@
   function renderTimeline() {
     var tl = document.getElementById("timeline");
     tl.innerHTML = "";
+    tl.style.setProperty("--n", Math.max(1, P.opts.length));
     P.opts.forEach(function (o) {
       var d = document.createElement("div");
       d.className = "stop";
@@ -950,7 +967,8 @@
       if (view !== "total") return;
       var x = c.scales.x, y = c.scales.y, ctx = c.ctx;
       var pairs = state.settings.invest ? investedPairs : breakEvens(collected);
-      var placements = { "early-full": [-10, -12, "right"], "early-late": [10, 20, "left"], "full-late": [-10, -12, "right"] };
+      var placements = { "early-full": [-10, -12, "right"], "early-late": [10, 20, "left"], "full-late": [-10, -12, "right"],
+        "dis-early": [10, 20, "left"], "dis-full": [-10, 22, "right"], "dis-late": [10, 36, "left"] };
       ctx.save();
       pairs.forEach(function (p) {
         if (!p.month) return;
@@ -1015,7 +1033,7 @@
     var muted = css("--muted"), rule = css("--rule");
     var birthYear = Math.floor(P.birth / 12), birthMo = P.birth % 12;
     var ticks = [P.minAge];
-    for (var a = Math.ceil((P.minAge + 1) / 5) * 5; a <= MAX_AGE; a += 5) ticks.push(a);
+    for (var a = Math.ceil((P.minAge + 2) / 5) * 5; a <= MAX_AGE; a += 5) ticks.push(a);   // skip a tick that would crowd the first one
     var n = P.opts.length;
     chart = new Chart(document.getElementById("chart"), {
       type: "line",
@@ -1085,6 +1103,7 @@
     var el = document.getElementById("totals");
     el.innerHTML = "";
     if (!P.ok) return;
+    el.style.setProperty("--n", Math.max(1, P.opts.length));
     var ageInput = document.getElementById("age");
     var minA = Math.min(P.minAge + 1, MAX_AGE);
     ageInput.min = minA;
