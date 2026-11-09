@@ -1,0 +1,23 @@
+# --- Personal data (PII): never commit ---
+# Your seed/export file with real names, birth months and benefit amounts
+craig-and-wife.json
+# Anything made by the page's Export button (retirement-people-YYYY-MM-DD.json)
+retirement-people-*.json
+# Live shared data written by server.js (and its one-step backup)
+data/
+# Any other personal exports; keep a sanitized example as *.example.json instead
+*.private.json
+
+# --- Local / generated ---
+node_modules/
+*.log
+*.tmp
+.env
+.env.*
+
+# OS / editor
+Thumbs.db
+Desktop.ini
+.DS_Store
+.vscode/
+.idea/

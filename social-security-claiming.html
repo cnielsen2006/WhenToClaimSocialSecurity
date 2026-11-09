@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>When to claim Social Security</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    color-scheme: light;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    --bg: #f4f6f3;
+    --surface: #ffffff;
+    --ink: #1c2622;
+    --muted: #5b6863;
+    --rule: #d9dfdb;
+    --early: #d08a1e;
+    --full: #2f7aa8;
+    --late: #7b4fb0;
+    --win: #e8f1ec;
+    --warn-bg: #fdf3df;
+    --warn-ink: #6b4a10;
+    --danger: #b3261e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #101614;
+      --surface: #18201d;
+      --ink: #e8eeeb;
+      --muted: #99a7a1;
+      --rule: #2b3632;
+      --early: #f0b44d;
+      --full: #6cb6e6;
+      --late: #c4a3f0;
+      --win: #1f2d27;
+      --warn-bg: #3a2e14;
+      --warn-ink: #f3d89c;
+      --danger: #f08c84;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #101614;
+    --surface: #18201d;
+    --ink: #e8eeeb;
+    --muted: #99a7a1;
+    --rule: #2b3632;
+    --early: #f0b44d;
+    --full: #6cb6e6;
+    --late: #c4a3f0;
+    --win: #1f2d27;
+    --warn-bg: #3a2e14;
+    --warn-ink: #f3d89c;
+    --danger: #f08c84;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    font-variant-numeric: tabular-nums;
+  }
+  main { max-width: 1080px; margin: 0 auto; padding: 32px 20px 64px; }
+
+  header { margin-bottom: 20px; }
+  h1 { font-size: clamp(1.75rem, 4.2vw, 2.6rem); line-height: 1.12; letter-spacing: -0.02em; margin: 0 0 10px; font-weight: 700; }
+  header p { margin: 0; color: var(--muted); max-width: 62ch; }
+
+  button { font: inherit; }
+  button:focus-visible, input:focus-visible { outline: 3px solid var(--full); outline-offset: 2px; }
+  .btn {
+    font-size: 0.92rem; font-weight: 500; color: var(--ink); background: var(--surface);
+    border: 1px solid var(--rule); border-radius: 6px; padding: 7px 14px; cursor: pointer;
+  }
+  .btn:hover { border-color: var(--muted); }
+  .btn.primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+  .btn.danger { color: var(--danger); }
+  .btn.quiet { background: transparent; border-color: transparent; color: var(--muted); }
+
+  /* People bar */
+  .people { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; margin: 0 0 18px; }
+  .people-list { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .person {
+    font-size: 0.95rem; font-weight: 600; color: var(--muted); background: transparent;
+    border: 1px solid var(--rule); border-radius: 999px; padding: 6px 16px; cursor: pointer;
+  }
+  .person[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+  .people-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .status { font-size: 0.85rem; color: var(--muted); min-width: 9ch; }
+
+  /* Editor */
+  .editor { padding: 18px 20px; margin: 0 0 18px; }
+  .editor[hidden] { display: none; }
+  .editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; max-width: 620px; }
+  .fld { display: flex; flex-direction: column; gap: 4px; font-size: 0.88rem; color: var(--muted); }
+  .fld input {
+    font: inherit; font-size: 1rem; color: var(--ink); background: var(--bg);
+    border: 1px solid var(--rule); border-radius: 6px; padding: 7px 10px; width: 100%;
+  }
+  .fld input[aria-invalid="true"] { border-color: var(--danger); }
+  .claims { margin-top: 18px; display: grid; gap: 10px; max-width: 760px; }
+  .claim-row { display: grid; grid-template-columns: 130px 1fr 1fr; gap: 10px 16px; align-items: end; padding: 10px 0 0; border-top: 1px solid var(--rule); }
+  .claim-row .tag { font-weight: 600; border-left: 5px solid var(--c); padding-left: 10px; align-self: center; }
+  .claim-row .tag small { display: block; font-weight: 400; color: var(--muted); font-size: 0.82rem; }
+  .money-wrap { position: relative; }
+  .money-wrap span { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+  .money-wrap input { padding-left: 22px; }
+  .editor-foot { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-top: 18px; }
+  .errors { color: var(--danger); font-size: 0.88rem; margin: 10px 0 0; }
+  .errors:empty { display: none; }
+
+  .banner { background: var(--warn-bg); color: var(--warn-ink); border-radius: 8px; padding: 10px 14px; margin: 0 0 18px; font-size: 0.92rem; }
+  .banner[hidden] { display: none; }
+  .banner button { color: inherit; background: transparent; border: 0; text-decoration: underline; cursor: pointer; padding: 0; font-weight: 600; }
+
+  /* Claim timeline */
+  .timeline { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); margin: 0 0 28px; }
+  .timeline::before { content: ""; position: absolute; left: 0; right: 0; top: 9px; height: 2px; background: var(--rule); }
+  .stop { position: relative; padding: 26px 16px 0 0; }
+  .stop::before {
+    content: ""; position: absolute; left: 0; top: 2px; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--surface); border: 4px solid var(--c);
+  }
+  .stop .name { font-weight: 600; }
+  .stop .date { color: var(--muted); font-size: 0.9rem; }
+  .stop .amt { font-size: clamp(1.6rem, 3.4vw, 2.2rem); font-weight: 700; letter-spacing: -0.02em; color: var(--c); line-height: 1.15; margin-top: 6px; }
+  .stop .amt span { font-size: 0.9rem; color: var(--muted); font-weight: 500; letter-spacing: 0; }
+  .stop .per-year { color: var(--muted); font-size: 0.88rem; }
+
+  .panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; }
+  .chart-panel { padding: 18px 18px 14px; }
+  .chart-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .chart-head h2 { font-size: 1.15rem; margin: 0; font-weight: 600; }
+  .seg { display: inline-flex; padding: 3px; background: var(--bg); border: 1px solid var(--rule); border-radius: 8px; }
+  .seg button {
+    font-size: 0.92rem; font-weight: 500; color: var(--muted);
+    background: transparent; border: 0; border-radius: 6px; padding: 6px 14px; cursor: pointer;
+  }
+  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--rule); }
+
+  /* Return controls */
+  .invest { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 24px; border: 1px solid var(--rule); border-radius: 8px; padding: 12px 14px; margin: 0 0 14px; background: var(--bg); }
+  .check { display: flex; align-items: center; gap: 8px; font-weight: 500; cursor: pointer; }
+  .check input { width: 18px; height: 18px; accent-color: var(--full); }
+  .rate-field { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.95rem; }
+  .rate-field input { width: 76px; padding: 6px 8px; font: inherit; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; }
+  .rate-range { flex: 1 1 220px; min-width: 180px; accent-color: var(--full); }
+  .invest.off .rate-field, .invest.off .rate-range { opacity: 0.45; pointer-events: none; }
+
+  .chart-box { position: relative; height: 460px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 10px 0 0; padding: 0; list-style: none; font-size: 0.9rem; color: var(--muted); }
+  .legend li { display: flex; align-items: center; gap: 8px; }
+  .legend i { width: 20px; height: 4px; border-radius: 2px; background: var(--c); display: inline-block; }
+  .legend i.dash { background: repeating-linear-gradient(90deg, var(--c) 0 6px, transparent 6px 10px); height: 3px; }
+  .caption { color: var(--muted); font-size: 0.88rem; margin: 8px 0 0; max-width: 80ch; }
+
+  /* Age explorer */
+  .explore { margin-top: 20px; padding: 20px; }
+  .explore-top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; }
+  .explore h2 { font-size: 1.15rem; font-weight: 600; margin: 0; }
+  .explore h2 output { color: var(--full); }
+  .explore .hint { color: var(--muted); font-size: 0.9rem; margin: 0; }
+  .explore input[type="range"] { width: 100%; margin: 18px 0 6px; accent-color: var(--full); }
+  .range-ends { display: flex; justify-content: space-between; color: var(--muted); font-size: 0.82rem; }
+  .totals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 18px; }
+  .total { border: 1px solid var(--rule); border-left: 5px solid var(--c); border-radius: 6px; padding: 12px 14px; }
+  .total.best { background: var(--win); }
+  .total .label { font-weight: 600; font-size: 0.95rem; }
+  .total .value { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; margin: 2px 0; }
+  .total .sub, .total .diff { font-size: 0.85rem; color: var(--muted); }
+
+  /* Break-even */
+  .be { margin-top: 20px; padding: 6px 20px; }
+  .be h2 { font-size: 1.15rem; font-weight: 600; margin: 14px 0 4px; }
+  .be-row { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 12px; padding: 12px 0; border-top: 1px solid var(--rule); align-items: baseline; }
+  .be-row.head { color: var(--muted); font-size: 0.88rem; padding-bottom: 6px; border-top: 0; }
+  .be-row .pair { font-weight: 600; }
+
+  .fine { color: var(--muted); font-size: 0.85rem; max-width: 72ch; margin: 18px 0 0; }
+
+  /* Dialogs */
+  dialog { border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); color: var(--ink); padding: 20px; width: min(560px, calc(100vw - 32px)); }
+  dialog::backdrop { background: rgba(10, 16, 14, 0.45); }
+  dialog h3 { margin: 0 0 8px; font-size: 1.1rem; }
+  dialog p { margin: 0 0 14px; color: var(--muted); }
+  dialog textarea { width: 100%; height: 220px; font: 0.85rem/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--ink); background: var(--bg); border: 1px solid var(--rule); border-radius: 6px; padding: 10px; }
+  .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+
+  @media (max-width: 760px) {
+    .timeline { grid-template-columns: 1fr; gap: 18px; }
+    .timeline::before { left: 7px; right: auto; top: 0; bottom: 0; width: 2px; height: auto; }
+    .stop { padding: 0 0 0 30px; }
+    .stop::before { top: 4px; }
+    .totals { grid-template-columns: 1fr; }
+    .chart-box { height: 380px; }
+    .editor-grid { grid-template-columns: 1fr; }
+    .claim-row { grid-template-columns: 1fr 1fr; }
+    .claim-row .tag { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>When to claim Social Security</h1>
+    <p>Compare starting early, at full retirement age, or delayed, month by month, with or without investing the checks.</p>
+  </header>
+
+  <section class="people" aria-label="People">
+    <div class="people-list" id="people-list" role="group" aria-label="Choose a person"></div>
+    <div class="people-tools">
+      <span class="status" id="status" role="status" aria-live="polite"></span>
+      <button type="button" class="btn" id="edit-btn" aria-expanded="false" aria-controls="editor">Edit numbers</button>
+      <button type="button" class="btn" id="export-btn">Export</button>
+      <button type="button" class="btn" id="import-btn">Import</button>
+      <input type="file" id="import-file" accept="application/json,.json" hidden>
+    </div>
+  </section>
+
+  <section class="panel editor" id="editor" hidden aria-label="Edit this person">
+    <div class="editor-grid">
+      <label class="fld">Name<input type="text" id="f-name" maxlength="40" autocomplete="off"></label>
+      <label class="fld">Birth month<input type="month" id="f-birth" placeholder="YYYY-MM"></label>
+    </div>
+    <div class="claims" id="claim-rows"></div>
+    <p class="errors" id="errors"></p>
+    <div class="editor-foot">
+      <div>
+        <button type="button" class="btn" id="add-btn">Add a person</button>
+        <button type="button" class="btn quiet" id="restore-btn" hidden>Restore example numbers</button>
+      </div>
+      <div>
+        <button type="button" class="btn danger" id="delete-btn">Remove this person</button>
+        <button type="button" class="btn primary" id="done-btn">Done</button>
+      </div>
+    </div>
+  </section>
+
+  <p class="banner" id="placeholder-banner" hidden>These are placeholder numbers copied from the example. <button type="button" id="banner-edit">Enter the real numbers</button> from this person’s Social Security statement.</p>
+
+  <section class="timeline" id="timeline" aria-label="Claiming options"></section>
+
+  <section class="panel chart-panel">
+    <div class="chart-head">
+      <h2 id="chart-title">Total collected over time</h2>
+      <div class="seg" id="view-seg" role="group" aria-label="Chart view">
+        <button type="button" data-view="total" aria-pressed="true">Total collected</button>
+        <button type="button" data-view="monthly" aria-pressed="false">Monthly income</button>
+      </div>
+    </div>
+
+    <div class="invest" id="invest">
+      <label class="check"><input type="checkbox" id="show-invest" checked> Invest every check</label>
+      <label class="rate-field">Yearly return
+        <input type="number" id="rate" min="0" max="15" step="0.25" value="4" inputmode="decimal"> %
+      </label>
+      <input type="range" class="rate-range" id="rate-range" min="0" max="10" step="0.25" value="4" aria-label="Yearly return">
+    </div>
+
+    <div class="invest" id="cola-box">
+      <label class="check"><input type="checkbox" id="show-cola" checked> Cost-of-living raises (COLA)</label>
+      <label class="rate-field">Yearly COLA
+        <input type="number" id="cola" min="0" max="10" step="0.1" value="2.5" inputmode="decimal"> %
+      </label>
+      <input type="range" class="rate-range" id="cola-range" min="0" max="6" step="0.1" value="2.5" aria-label="Yearly cost-of-living raise">
+    </div>
+
+    <div class="chart-box"><canvas id="chart" role="img" aria-label="Chart comparing the three claiming options by age, with and without investing"></canvas></div>
+    <ul class="legend" id="legend"></ul>
+    <p class="caption" id="caption"></p>
+  </section>
+
+  <section class="panel explore" aria-labelledby="explore-title">
+    <div class="explore-top">
+      <h2 id="explore-title">By age <output id="age-out">85</output></h2>
+      <p class="hint">Drag to see which option is ahead at a given age.</p>
+    </div>
+    <input type="range" id="age" min="63" max="100" step="1" value="85" aria-label="Age">
+    <div class="range-ends"><span id="age-min">63</span><span>100</span></div>
+    <div class="totals" id="totals"></div>
+  </section>
+
+  <section class="panel be" aria-labelledby="be-title">
+    <h2 id="be-title">Break-even points</h2>
+    <div id="be-rows"></div>
+  </section>
+
+  <p class="fine">Enter amounts in today’s dollars, as your Social Security statement shows them. With COLA on, every check rises by the yearly COLA each January after this year, including the years before you claim, the way Social Security applies it. With COLA off, amounts stay exactly as entered. Figures are before taxes and Medicare premiums. Ages are counted from the birth month. Investing assumes every check is invested the month it arrives, nothing is withdrawn, and it compounds monthly at a steady yearly return with no taxes or fees. It’s a what-if, not a forecast. The Example person uses a full-retirement benefit of $2,100, close to the U.S. average for retired workers in 2026, with the standard reductions for claiming at 62 (70%) and credits for waiting to 70 (124%).</p>
+</main>
+
+<dialog id="confirm-dlg">
+  <h3 id="confirm-title"></h3>
+  <p id="confirm-text"></p>
+  <div class="dialog-actions">
+    <button type="button" class="btn" value="cancel" id="confirm-cancel">Cancel</button>
+    <button type="button" class="btn primary" value="ok" id="confirm-ok">OK</button>
+  </div>
+</dialog>
+
+<dialog id="copy-dlg">
+  <h3>Export</h3>
+  <p>Saving files isn’t available here, so copy this text and keep it somewhere safe. Use Import to load it back.</p>
+  <textarea id="copy-text" readonly></textarea>
+  <div class="dialog-actions">
+    <button type="button" class="btn" id="copy-btn">Copy</button>
+    <button type="button" class="btn primary" id="copy-close">Close</button>
+  </div>
+</dialog>
+
+<script>
+(function () {
+  // ---------- Model ----------
+  var MONTHS = ["Jan.", "Feb.", "Mar.", "Apr.", "May", "Jun.", "Jul.", "Aug.", "Sep.", "Oct.", "Nov.", "Dec."];
+  var TAGS = [
+    { key: "early", tag: "Early",   color: "--early", hint: "First month you can claim" },
+    { key: "full",  tag: "Full",    color: "--full",  hint: "Full retirement age" },
+    { key: "late",  tag: "Delayed", color: "--late",  hint: "Usually age 70" }
+  ];
+  var MAX_AGE = 100;
+  var LS_KEY = "retirement-claiming-v1";
+  var BASE_YEAR = new Date().getFullYear();   // entered amounts are in this year's dollars
+
+  function exampleProfile() {
+    return { id: "example", name: "Example", birth: "1970-01",
+      options: [{ claim: "2032-02", amount: 1470 }, { claim: "2037-01", amount: 2100 }, { claim: "2040-01", amount: 2604 }] };
+  }
+  // Built-in starting point: the Example only. Real people come from saved data or Import.
+  function defaultState() {
+    return { version: 1, savedAt: 0, activeId: "example", settings: { invest: true, rate: 4, cola: true, colaRate: 2.5 }, profiles: [exampleProfile()] };
+  }
+
+  // Combine two copies without ever dropping a person: the newer copy wins
+  // for anyone in both, and anyone only in the older copy is kept.
+  function mergeStates(local, remote) {
+    var newer = (local.savedAt || 0) > (remote.savedAt || 0) ? local : remote;
+    var older = newer === local ? remote : local;
+    var out = JSON.parse(JSON.stringify(newer));
+    var have = {};
+    out.profiles.forEach(function (p) { have[p.id] = true; });
+    older.profiles.forEach(function (p) {
+      if (!have[p.id]) { out.profiles.push(JSON.parse(JSON.stringify(p))); have[p.id] = true; }
+    });
+    return { state: out, changedRemote: JSON.stringify(out) !== JSON.stringify(remote) };
+  }
+
+  var parseMonth = function (s) {
+    var mt = /^(\d{4})-(\d{1,2})$/.exec(String(s || "").trim());
+    if (!mt) return null;
+    var y = +mt[1], mo = +mt[2];
+    if (mo < 1 || mo > 12 || y < 1900 || y > 2200) return null;
+    return y * 12 + mo - 1;
+  };
+  var pad = function (n) { return (n < 10 ? "0" : "") + n; };
+  var money = function (n) { return "$" + Math.round(n).toLocaleString("en-US"); };
+  var short = function (n) { return n >= 1e6 ? "$" + (n / 1e6).toFixed(1) + "M" : "$" + Math.round(n / 1000) + "k"; };
+  var monthText = function (m) { return MONTHS[m % 12] + " " + Math.floor(m / 12); };
+  var css = function (v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); };
+  var rateText = function (r) { return (+r.toFixed(2)) + "%"; };
+  var uid = function () { return "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); };
+
+  // Clean and check anything loaded from storage or a file
+  function validateState(obj) {
+    if (!obj || typeof obj !== "object" || !Array.isArray(obj.profiles) || !obj.profiles.length) return null;
+    var seen = {};
+    var profiles = obj.profiles.slice(0, 20).map(function (p) {
+      if (!p || typeof p !== "object") return null;
+      var opts = Array.isArray(p.options) ? p.options : [];
+      var id = typeof p.id === "string" && /^[\w-]{1,40}$/.test(p.id) && !seen[p.id] ? p.id : uid();
+      seen[id] = true;
+      var out = {
+        id: id,
+        name: String(p.name || "Person").slice(0, 40),
+        birth: String(p.birth || ""),
+        options: [0, 1, 2].map(function (k) {
+          var o = opts[k] || {};
+          var amt = Number(o.amount);
+          return { claim: String(o.claim || ""), amount: isFinite(amt) ? Math.max(0, Math.round(amt * 100) / 100) : 0 };
+        })
+      };
+      if (p.placeholder === true) out.placeholder = true;
+      return out;
+    }).filter(Boolean);
+    if (!profiles.length) return null;
+    var s = obj.settings || {};
+    var rate = Number(s.rate);
+    var colaRate = Number(s.colaRate);
+    var savedAt = Number(obj.savedAt);
+    return {
+      version: 1,
+      savedAt: isFinite(savedAt) ? savedAt : 0,
+      activeId: profiles.some(function (p) { return p.id === obj.activeId; }) ? obj.activeId : profiles[0].id,
+      settings: { invest: s.invest !== false, rate: isFinite(rate) ? Math.max(0, Math.min(15, rate)) : 4,
+        cola: s.cola !== false, colaRate: isFinite(colaRate) && s.colaRate != null ? Math.max(0, Math.min(10, colaRate)) : 2.5 },
+      profiles: profiles
+    };
+  }
+
+  // ---------- State ----------
+  var state = loadLocal() || defaultState();
+  var hadLocal = !!loadLocal();
+  var view = "total";
+  var selectedAge = 85;
+  var chart;
+  var P;                 // computed numbers for the active person
+  var investedPairs = [];
+
+  function active() {
+    for (var k = 0; k < state.profiles.length; k++) if (state.profiles[k].id === state.activeId) return state.profiles[k];
+    state.activeId = state.profiles[0].id;
+    return state.profiles[0];
+  }
+
+  // Turn a profile into numbers the charts use
+  function compute(p) {
+    var errors = [];
+    var birth = parseMonth(p.birth);
+    if (birth == null) errors.push("Enter a birth month.");
+    var opts = [];
+    p.options.forEach(function (o, k) {
+      var start = parseMonth(o.claim);
+      var t = TAGS[k];
+      if (start == null) { errors.push(t.tag + ": enter the month of the first check."); return; }
+      if (!(o.amount > 0)) { errors.push(t.tag + ": enter a monthly amount above $0."); return; }
+      if (birth != null && start <= birth) { errors.push(t.tag + ": the first check should be after the birth month."); return; }
+      opts.push({ key: t.key, tag: t.tag, color: t.color, start: start, amount: o.amount });
+    });
+    for (var k = 1; k < opts.length; k++) {
+      if (opts[k].start <= opts[k - 1].start) { errors.push("First-check months should go in order: Early, then Full, then Delayed."); break; }
+    }
+    if (birth == null) return { ok: false, errors: errors, opts: [] };
+    opts.forEach(function (o) { o.name = "Age " + Math.floor((o.start - birth) / 12); });
+    var end = birth + MAX_AGE * 12;
+    var first = opts.length ? Math.min.apply(null, opts.map(function (o) { return o.start; })) : end;
+    var grid = [];
+    for (var m = first; m <= end; m++) grid.push(m);
+    return {
+      ok: opts.length > 0 && first < end, errors: errors, birth: birth, end: end, first: first, opts: opts, grid: grid,
+      minAge: Math.floor((first - birth) / 12)
+    };
+  }
+  var ageOf = function (m) { return (m - P.birth) / 12; };
+
+  // ---------- Money math ----------
+  var monthlyRate = function () { return Math.pow(1 + state.settings.rate / 100, 1 / 12) - 1; };
+  var colaRate = function () { return state.settings.cola ? state.settings.colaRate / 100 : 0; };
+  // Check size in a given month: the entered amount (today's dollars), raised by
+  // the COLA every January after the current year, as Social Security does.
+  function checkFor(o, m) {
+    var years = Math.max(0, Math.floor(m / 12) - BASE_YEAR);
+    return o.amount * Math.pow(1 + colaRate(), years);
+  }
+  // Precompute each option's checks, running total and invested balance month by month.
+  // Every check is invested the month it arrives, compounding monthly, nothing withdrawn.
+  function buildSeries() {
+    var i = monthlyRate();
+    P.opts.forEach(function (o) {
+      o.pay = []; o.col = []; o.inv = [];
+      var col = 0, inv = 0;
+      for (var m = P.first; m <= P.end; m++) {
+        var p = m < o.start ? 0 : checkFor(o, m);
+        col += p;
+        inv = inv * (1 + i) + p;
+        o.pay.push(p); o.col.push(col); o.inv.push(inv);
+      }
+    });
+  }
+  function at(arr, m) {
+    var k = m - P.first;
+    if (k < 0) return 0;
+    return arr[Math.min(k, arr.length - 1)];
+  }
+  function payment(o, m) { return m < o.start ? 0 : at(o.pay, m); }
+  function collected(o, m) { return m < o.start ? 0 : at(o.col, m); }
+  function invested(o, m) { return m < o.start ? 0 : at(o.inv, m); }
+  function monthlyIncome(o, m) {
+    if (m < o.start) return null;
+    return payment(o, m) + invested(o, m - 1) * monthlyRate();
+  }
+  function breakEvens(fn) {
+    var out = [];
+    var pairs = [[0, 1], [0, 2], [1, 2]];
+    pairs.forEach(function (pr) {
+      var a = P.opts[pr[0]], b = P.opts[pr[1]];
+      if (!a || !b) return;
+      var hit = null;
+      for (var m = Math.max(a.start, b.start); m <= P.end; m++) {
+        if (fn(b, m) >= fn(a, m)) { hit = m; break; }
+      }
+      out.push({ a: a, b: b, month: hit, age: hit ? ageOf(hit) : null, total: hit ? fn(b, hit) : null });
+    });
+    return out;
+  }
+
+  // ---------- Saving ----------
+  function loadLocal() {
+    try { var s = localStorage.getItem(LS_KEY); return s ? validateState(JSON.parse(s)) : null; } catch (e) { return null; }
+  }
+  function saveLocal() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+  var statusEl = document.getElementById("status");
+  function setStatus(t) { statusEl.textContent = t; }
+
+  var dbRef = null, dbChecked = false, writing = false, again = false, saveTimer = null, editedBeforeLoad = false;
+  var savePending = false, dirty = false, syncedAt = 0, pollTimer = null;   // dirty = changes not yet on the server
+  var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+
+  function scheduleSave() {
+    if (!dbChecked) editedBeforeLoad = true;
+    state.savedAt = Date.now();
+    savePending = true;
+    dirty = true;
+    saveLocal();
+    setStatus("Saving…");
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(flush, 700);
+  }
+  function flush() {
+    savePending = false;
+    if (!dbRef) { setStatus(dbChecked ? "Saved in this browser" : "Saved"); return; }
+    if (writing) { again = true; return; }
+    writing = true;
+    var body = JSON.parse(JSON.stringify(state));
+    dbRef.set(body).catch(function (e) {
+      if (e && e.code === "unavailable") return sleep(600 + Math.random() * 900).then(function () { return dbRef.set(body); });
+      throw e;
+    }).then(function (res) {
+      // Nothing newer was typed while this was in flight: we're in sync.
+      // On the LAN server the server's own clock stamps each save.
+      if (!savePending && !again) {
+        dirty = false;
+        if (res && res.savedAt) { state.savedAt = res.savedAt; syncedAt = res.savedAt; saveLocal(); }
+      }
+      setStatus("Saved");
+    }).catch(function (e) {
+      if (e && e.code === "quota_exceeded") setStatus("Storage is full; kept in this browser");
+      else setStatus("Couldn’t reach the server; kept in this browser");
+    }).then(function () {
+      writing = false;
+      if (again) { again = false; flush(); }
+    });
+  }
+
+  function noRemote() {
+    dbChecked = true;
+    setStatus(hadLocal ? "Saved in this browser" : "Showing the example. Use Import to load your people.");
+  }
+
+  // ---------- Shared storage on the LAN server (server.js) ----------
+  function lanStore() {
+    var url = "api/state";
+    var net = function (e) { if (e instanceof TypeError) e.code = "unavailable"; throw e; };
+    return {
+      get: function () {
+        return fetch(url, { cache: "no-store" }).then(function (r) {
+          if (r.status === 404) return { exists: false, data: function () { return null; } };
+          if (!r.ok) throw new Error("http " + r.status);
+          return r.json().then(function (d) { return { exists: true, data: function () { return d; } }; });
+        });
+      },
+      set: function (body) {
+        return fetch(url, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+          .catch(net)
+          .then(function (r) {
+            if (!r.ok) { var e = new Error("http " + r.status); if (r.status === 413) e.code = "quota_exceeded"; throw e; }
+            return r.json();
+          });
+      }
+    };
+  }
+  var sigOf = function (s) { return JSON.stringify([s.profiles, s.settings]); };
+
+  // Take someone else's saved copy, but keep whichever person this browser is looking at.
+  function adoptRemote(remote) {
+    var keep = state.activeId;
+    state = remote;
+    if (state.profiles.some(function (p) { return p.id === keep; })) state.activeId = keep;
+    syncedAt = remote.savedAt;
+    dirty = false;
+    saveLocal();
+    renderAll();
+  }
+
+  function poll() {
+    if (!dbRef || document.hidden || writing || again || savePending) return;
+    if (dirty) { flush(); return; }                      // an earlier save didn't get through; try again
+    dbRef.get().then(function (snap) {
+      if (!snap.exists || dirty || writing || again || savePending) return;
+      var remote = validateState(snap.data());
+      if (!remote || remote.savedAt === syncedAt) return;
+      if (sigOf(remote) === sigOf(state)) { syncedAt = remote.savedAt; state.savedAt = remote.savedAt; saveLocal(); return; }
+      if (editorOpen) return;                            // don't pull the rug out from under someone typing
+      adoptRemote(remote);
+      setStatus("Updated from another device");
+    }).catch(function () {});
+  }
+  function startPolling() {
+    if (pollTimer) return;
+    pollTimer = setInterval(poll, 8000);
+    document.addEventListener("visibilitychange", function () { if (!document.hidden) poll(); });
+  }
+
+  function connectLan() {
+    var ref = lanStore();
+    setStatus("Loading saved people…");
+    ref.get().then(function (snap) {
+      dbRef = ref;
+      dbChecked = true;
+      var remote = snap.exists ? validateState(snap.data()) : null;
+      startPolling();
+      if (!remote) {
+        if (hadLocal || editedBeforeLoad) { dirty = true; flush(); } else setStatus("");
+        return;
+      }
+      syncedAt = remote.savedAt;
+      if (state.savedAt > remote.savedAt) {
+        // This browser has changes the server never saw (made offline): combine, never drop anyone
+        var merged = mergeStates(state, remote);
+        state = merged.state;
+        saveLocal();
+        renderAll();
+        dirty = true;
+        flush();
+      } else {
+        if (sigOf(remote) !== sigOf(state) || remote.savedAt !== state.savedAt) adoptRemote(remote);
+        setStatus("Saved");
+      }
+    }).catch(function () {
+      dbRef = null;
+      noRemote();
+      setTimeout(connectLan, 15000);                     // server not reachable yet; keep trying
+    });
+  }
+
+  function connect() {
+    if (window.claude && typeof window.claude.use === "function") { connectClaude(); return; }
+    if (/^https?:$/.test(location.protocol)) { connectLan(); return; }
+    noRemote();                                          // opened as a plain file
+  }
+
+  function connectClaude() {
+    setStatus("Loading saved people…");
+    var dbP = window.claude.use("db");
+    var userP = window.claude.use("user");
+    Promise.all([dbP, userP]).then(function (res) {
+      var db = res[0], user = res[1];
+      if (!db || !user) return null;
+      return user.id().then(function (id) { return id ? db.doc("data/users/" + id + "/retirement") : null; });
+    }).then(function (ref) {
+      if (!ref) { noRemote(); return; }
+      dbRef = ref;
+      var slow = setTimeout(function () { setStatus("Can’t reach saved data yet"); }, 10000);
+      return ref.get().then(function (snap) {
+        clearTimeout(slow);
+        dbChecked = true;
+        var remote = snap.exists ? validateState(snap.data()) : null;
+        if (!remote) {
+          if (hadLocal || editedBeforeLoad) flush(); else setStatus("");
+          return;
+        }
+        var merged = mergeStates(state, remote);
+        state = merged.state;
+        saveLocal();
+        renderAll();
+        if (merged.changedRemote) flush(); else setStatus("Saved");
+      });
+    }).catch(function () {
+      dbRef = null;
+      noRemote();
+    });
+  }
+
+  // ---------- People bar ----------
+  var editorOpen = false;
+  function renderPeople() {
+    var list = document.getElementById("people-list");
+    list.innerHTML = "";
+    state.profiles.forEach(function (p) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "person";
+      b.textContent = p.name || "Person";
+      b.setAttribute("aria-pressed", String(p.id === state.activeId));
+      b.addEventListener("click", function () {
+        if (p.id === state.activeId) return;
+        state.activeId = p.id;
+        scheduleSave();
+        renderAll();
+      });
+      list.appendChild(b);
+    });
+  }
+
+  // ---------- Editor ----------
+  var fName = document.getElementById("f-name");
+  var fBirth = document.getElementById("f-birth");
+  var rowsEl = document.getElementById("claim-rows");
+  rowsEl.innerHTML = TAGS.map(function (t, k) {
+    return '<div class="claim-row" style="--c: var(' + t.color + ')">' +
+      '<div class="tag">' + t.tag + '<small>' + t.hint + '</small></div>' +
+      '<label class="fld">First check<input type="month" data-k="' + k + '" data-f="claim" placeholder="YYYY-MM"></label>' +
+      '<label class="fld">Monthly amount<span class="money-wrap"><span>$</span><input type="number" min="0" step="1" inputmode="decimal" data-k="' + k + '" data-f="amount"></span></label>' +
+      '</div>';
+  }).join("");
+
+  function fillEditor() {
+    var p = active();
+    fName.value = p.name;
+    fBirth.value = p.birth;
+    rowsEl.querySelectorAll("input").forEach(function (inp) {
+      var o = p.options[+inp.dataset.k];
+      inp.value = inp.dataset.f === "claim" ? o.claim : (o.amount || "");
+    });
+    document.getElementById("restore-btn").hidden = p.id !== "example";
+    document.getElementById("delete-btn").disabled = state.profiles.length < 2;
+    markInvalid();
+  }
+  function markInvalid() {
+    var p = active();
+    fBirth.setAttribute("aria-invalid", String(parseMonth(p.birth) == null));
+    rowsEl.querySelectorAll("input").forEach(function (inp) {
+      var o = p.options[+inp.dataset.k];
+      var bad = inp.dataset.f === "claim" ? parseMonth(o.claim) == null : !(o.amount > 0);
+      inp.setAttribute("aria-invalid", String(bad));
+    });
+  }
+  function onEdit() {
+    var p = active();
+    delete p.placeholder;
+    scheduleSave();
+    markInvalid();
+    renderNumbers();
+  }
+  fName.addEventListener("input", function () {
+    active().name = fName.value.slice(0, 40);
+    scheduleSave();
+    renderPeople();
+  });
+  fBirth.addEventListener("input", function () { active().birth = fBirth.value.trim(); onEdit(); });
+  rowsEl.addEventListener("input", function (e) {
+    var inp = e.target;
+    if (!inp.dataset || inp.dataset.k == null) return;
+    var o = active().options[+inp.dataset.k];
+    if (inp.dataset.f === "claim") o.claim = inp.value.trim();
+    else { var v = parseFloat(inp.value); o.amount = isFinite(v) ? Math.max(0, v) : 0; }
+    onEdit();
+  });
+
+  function setEditor(open) {
+    editorOpen = open;
+    document.getElementById("editor").hidden = !open;
+    document.getElementById("edit-btn").setAttribute("aria-expanded", String(open));
+    if (open) { fillEditor(); fName.focus(); }
+  }
+  document.getElementById("edit-btn").addEventListener("click", function () { setEditor(!editorOpen); });
+  document.getElementById("done-btn").addEventListener("click", function () { setEditor(false); });
+  document.getElementById("banner-edit").addEventListener("click", function () { setEditor(true); });
+
+  document.getElementById("add-btn").addEventListener("click", function () {
+    var base = active();
+    var p = { id: uid(), name: "New person", birth: base.birth, options: base.options.map(function (o) { return { claim: o.claim, amount: o.amount }; }) };
+    state.profiles.push(p);
+    state.activeId = p.id;
+    scheduleSave();
+    renderAll();
+    setEditor(true);
+    fName.select();
+  });
+  document.getElementById("delete-btn").addEventListener("click", function () {
+    var p = active();
+    if (state.profiles.length < 2) return;
+    confirmBox("Remove " + (p.name || "this person") + "?", "Their numbers will be deleted. Export first if you might want them back.", "Remove").then(function (ok) {
+      if (!ok) return;
+      state.profiles = state.profiles.filter(function (x) { return x.id !== p.id; });
+      state.activeId = state.profiles[0].id;
+      scheduleSave();
+      renderAll();
+    });
+  });
+  document.getElementById("restore-btn").addEventListener("click", function () {
+    var p = active(), ex = exampleProfile();
+    p.birth = ex.birth;
+    p.options = ex.options;
+    scheduleSave();
+    renderAll();
+  });
+
+  // ---------- Dialogs ----------
+  var confirmDlg = document.getElementById("confirm-dlg");
+  function confirmBox(title, text, okLabel) {
+    return new Promise(function (resolve) {
+      document.getElementById("confirm-title").textContent = title;
+      document.getElementById("confirm-text").textContent = text;
+      var ok = document.getElementById("confirm-ok"), cancel = document.getElementById("confirm-cancel");
+      ok.textContent = okLabel || "OK";
+      var done = function (v) {
+        ok.onclick = cancel.onclick = null;
+        confirmDlg.onclose = null;
+        if (confirmDlg.open) confirmDlg.close();
+        resolve(v);
+      };
+      ok.onclick = function () { done(true); };
+      cancel.onclick = function () { done(false); };
+      confirmDlg.onclose = function () { done(false); };
+      confirmDlg.showModal();
+    });
+  }
+  var copyDlg = document.getElementById("copy-dlg");
+  document.getElementById("copy-close").addEventListener("click", function () { copyDlg.close(); });
+  document.getElementById("copy-btn").addEventListener("click", function () {
+    var ta = document.getElementById("copy-text");
+    ta.focus(); ta.select();
+    var done = function () { document.getElementById("copy-btn").textContent = "Copied"; };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(ta.value).then(done, function () { try { document.execCommand("copy"); done(); } catch (e) {} });
+    } else { try { document.execCommand("copy"); done(); } catch (e) {} }
+  });
+
+  // ---------- Export / import ----------
+  document.getElementById("export-btn").addEventListener("click", function () {
+    var d = new Date();
+    var payload = JSON.stringify({
+      app: "retirement-claiming", version: 1, exportedAt: d.toISOString(),
+      activeId: state.activeId, settings: state.settings, profiles: state.profiles
+    }, null, 2);
+    var filename = "retirement-people-" + d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + ".json";
+    var showCopy = function () {
+      document.getElementById("copy-text").value = payload;
+      document.getElementById("copy-btn").textContent = "Copy";
+      copyDlg.showModal();
+    };
+    if (!window.claude || typeof window.claude.use !== "function") {
+      // Opened as a plain file in a browser: a normal download works here
+      var url = URL.createObjectURL(new Blob([payload], { type: "application/json" }));
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      setStatus("Exported");
+      return;
+    }
+    var p = window.claude.use("downloads");
+    p.then(function (dl) {
+      if (!dl) return showCopy();
+      return dl.save({ filename: filename, data: payload }).then(function () {
+        setStatus("Exported");
+      }, function (e) {
+        var code = e && e.code;
+        if (code === "declined") return;
+        if (code === "rate_limited") { setStatus("A save prompt is already open"); return; }
+        showCopy();
+      });
+    });
+  });
+
+  var fileInput = document.getElementById("import-file");
+  document.getElementById("import-btn").addEventListener("click", function () { fileInput.value = ""; fileInput.click(); });
+  fileInput.addEventListener("change", function () {
+    var f = fileInput.files && fileInput.files[0];
+    if (!f) return;
+    f.text().then(function (txt) {
+      var parsed;
+      try { parsed = validateState(JSON.parse(txt)); } catch (e) { parsed = null; }
+      if (!parsed) {
+        confirmBox("That file can’t be imported", "Choose a file made with this page’s Export button.", "OK");
+        return;
+      }
+      var n = parsed.profiles.length;
+      var names = parsed.profiles.map(function (p) { return p.name; }).join(", ");
+      confirmBox("Import " + n + (n === 1 ? " person?" : " people?"),
+        "Adds " + names + ". Anyone already here from the same file is updated; everyone else stays.", "Import").then(function (ok) {
+        if (!ok) return;
+        var at = {};
+        state.profiles.forEach(function (p, k) { at[p.id] = k; });
+        parsed.profiles.forEach(function (p) {
+          if (at[p.id] != null) state.profiles[at[p.id]] = p;
+          else { at[p.id] = state.profiles.length; state.profiles.push(p); }
+        });
+        state.activeId = parsed.profiles[0].id;
+        scheduleSave();
+        renderAll();
+      });
+    });
+  });
+
+  // ---------- Chart pieces ----------
+  function renderTimeline() {
+    var tl = document.getElementById("timeline");
+    tl.innerHTML = "";
+    P.opts.forEach(function (o) {
+      var d = document.createElement("div");
+      d.className = "stop";
+      d.style.setProperty("--c", "var(" + o.color + ")");
+      d.innerHTML =
+        '<div class="name">' + o.name + ' (' + o.tag + ')</div>' +
+        '<div class="date">First check ' + monthText(o.start) + '</div>' +
+        '<div class="amt">' + money(o.amount) + ' <span>/ month</span></div>' +
+        (state.settings.cola && payment(o, o.start) !== o.amount
+          ? '<div class="per-year">In today’s dollars; first check ≈ ' + money(payment(o, o.start)) + ' with COLA</div>'
+          : '<div class="per-year">' + money(o.amount * 12) + ' a year</div>');
+      tl.appendChild(d);
+    });
+  }
+
+  function renderLegend() {
+    var legend = document.getElementById("legend");
+    legend.innerHTML = "";
+    var inv = state.settings.invest;
+    P.opts.forEach(function (o) {
+      var li = document.createElement("li");
+      li.style.setProperty("--c", "var(" + o.color + ")");
+      li.innerHTML = "<i></i>" + o.tag + (inv ? (view === "total" ? ", collected" : ", check only") : "");
+      legend.appendChild(li);
+    });
+    if (!inv) return;
+    P.opts.forEach(function (o) {
+      var li = document.createElement("li");
+      li.style.setProperty("--c", "var(" + o.color + ")");
+      li.innerHTML = '<i class="dash"></i>' + o.tag + (view === "total" ? ", invested at " : ", check + interest at ") + rateText(state.settings.rate);
+      legend.appendChild(li);
+    });
+  }
+
+  function setCaption() {
+    var t, inv = state.settings.invest, r = rateText(state.settings.rate);
+    if (view === "total" && inv) t = "Solid lines are checks collected. Dashed lines invest every check the month it arrives at " + r + " a year and let it compound, with nothing spent. Dots mark where a later start’s invested balance catches up.";
+    else if (view === "total") t = "Each line is everything received so far. Dots mark where a later start catches up.";
+    else if (inv) t = "Solid lines are the monthly checks. Dashed lines add each month’s interest on that option’s invested balance at " + r + " a year, which keeps growing because nothing is spent.";
+    else t = "Each line starts on its first check. Later starts pay more every month.";
+    if (state.settings.cola) t += " Checks rise " + rateText(state.settings.colaRate) + " each January for cost of living.";
+    document.getElementById("caption").textContent = t;
+  }
+
+  var overlay = {
+    id: "overlay",
+    afterDatasetsDraw: function (c) {
+      if (view !== "total") return;
+      var x = c.scales.x, y = c.scales.y, ctx = c.ctx;
+      var pairs = state.settings.invest ? investedPairs : breakEvens(collected);
+      var placements = { "early-full": [-10, -12, "right"], "early-late": [10, 20, "left"], "full-late": [-10, -12, "right"] };
+      ctx.save();
+      pairs.forEach(function (p) {
+        if (!p.month) return;
+        var bx = x.getPixelForValue(p.age), by = y.getPixelForValue(p.total);
+        ctx.beginPath();
+        ctx.arc(bx, by, 6, 0, Math.PI * 2);
+        ctx.fillStyle = css("--surface");
+        ctx.fill();
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = css(p.b.color);
+        ctx.stroke();
+        var pl = placements[p.a.key + "-" + p.b.key] || [-10, -12, "right"];
+        ctx.fillStyle = css("--ink");
+        ctx.font = "600 12px 'IBM Plex Sans', system-ui, sans-serif";
+        ctx.textAlign = pl[2];
+        ctx.fillText(p.b.tag + " passes " + p.a.tag + " at " + p.age.toFixed(1), bx + pl[0], by + pl[1]);
+      });
+      ctx.restore();
+    }
+  };
+
+  function line(o, values, dashed, label) {
+    return {
+      label: label,
+      data: P.grid.map(function (mm, idx) { return { x: ageOf(mm), y: values[idx], m: mm }; }),
+      borderColor: css(o.color),
+      backgroundColor: css(o.color),
+      borderWidth: dashed ? 2.25 : (state.settings.invest ? 2 : 3),
+      borderDash: dashed ? [7, 5] : [],
+      pointRadius: 0,
+      pointHoverRadius: 5,
+      pointHoverBorderWidth: 2,
+      pointHoverBackgroundColor: css("--surface"),
+      stepped: view === "monthly" && !dashed ? "before" : false,
+      spanGaps: false
+    };
+  }
+
+  function datasets() {
+    var inv = state.settings.invest;
+    var sets = P.opts.map(function (o) {
+      var vals = P.grid.map(function (mm) {
+        return mm < o.start ? null : (view === "total" ? collected(o, mm) : payment(o, mm));
+      });
+      return line(o, vals, false, o.tag + (inv ? (view === "total" ? " collected" : " check") : ""));
+    });
+    if (inv) {
+      P.opts.forEach(function (o) {
+        var vals = P.grid.map(function (mm) {
+          if (mm < o.start) return null;
+          return view === "total" ? invested(o, mm) : monthlyIncome(o, mm);
+        });
+        sets.push(line(o, vals, true, o.tag + (view === "total" ? " invested" : " check + interest")));
+      });
+    }
+    return sets;
+  }
+
+  function draw() {
+    if (chart) { chart.destroy(); chart = null; }
+    if (!P.ok) return;
+    var muted = css("--muted"), rule = css("--rule");
+    var birthYear = Math.floor(P.birth / 12), birthMo = P.birth % 12;
+    var ticks = [P.minAge];
+    for (var a = Math.ceil((P.minAge + 1) / 5) * 5; a <= MAX_AGE; a += 5) ticks.push(a);
+    var n = P.opts.length;
+    chart = new Chart(document.getElementById("chart"), {
+      type: "line",
+      data: { datasets: datasets() },
+      plugins: [overlay],
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        parsing: false,
+        normalized: true,
+        layout: { padding: { top: 6, right: 8 } },
+        interaction: { mode: "index", intersect: false },
+        scales: {
+          x: {
+            type: "linear",
+            min: P.minAge,
+            max: MAX_AGE,
+            grid: { color: rule },
+            border: { color: rule },
+            title: { display: true, text: "Age (and year)", color: muted },
+            afterBuildTicks: function (axis) { axis.ticks = ticks.map(function (v) { return { value: v }; }); },
+            ticks: {
+              color: muted,
+              maxRotation: 0,
+              callback: function (v) { return [String(v), String(Math.floor((birthYear * 12 + birthMo + v * 12) / 12))]; }
+            }
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: rule },
+            border: { display: false },
+            ticks: {
+              color: muted,
+              callback: function (v) { return view === "monthly" ? money(v) : short(v); }
+            }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: css("--ink"),
+            titleColor: css("--surface"),
+            bodyColor: css("--surface"),
+            padding: 10,
+            boxPadding: 4,
+            usePointStyle: true,
+            itemSort: function (a, b) { return (a.datasetIndex % n) - (b.datasetIndex % n) || a.datasetIndex - b.datasetIndex; },
+            callbacks: {
+              title: function (items) {
+                var mm = items[0].raw.m;
+                return monthText(mm) + ", age " + ageOf(mm).toFixed(1);
+              },
+              label: function (c) {
+                if (c.raw.y == null) return " " + c.dataset.label + ": not started yet";
+                return " " + c.dataset.label + ": " + money(c.raw.y) + (view === "monthly" ? " / month" : "");
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // ---------- Age cards and break-even table ----------
+  function renderTotals() {
+    var el = document.getElementById("totals");
+    el.innerHTML = "";
+    if (!P.ok) return;
+    var ageInput = document.getElementById("age");
+    var minA = Math.min(P.minAge + 1, MAX_AGE);
+    ageInput.min = minA;
+    document.getElementById("age-min").textContent = minA;
+    selectedAge = Math.max(minA, Math.min(MAX_AGE, selectedAge));
+    ageInput.value = selectedAge;
+    document.getElementById("age-out").textContent = selectedAge;
+
+    var inv = state.settings.invest;
+    var lastMonth = P.birth + selectedAge * 12 - 1;   // checks received before this birthday
+    var plain = P.opts.map(function (o) { return collected(o, lastMonth); });
+    var vals = inv ? P.opts.map(function (o) { return invested(o, lastMonth); }) : plain;
+    var best = Math.max.apply(null, vals);
+    P.opts.forEach(function (o, k) {
+      var v = vals[k];
+      var div = document.createElement("div");
+      div.className = "total" + (v === best && v > 0 ? " best" : "");
+      div.style.setProperty("--c", "var(" + o.color + ")");
+      var diff;
+      if (v === 0) diff = "No checks yet at this age";
+      else if (v === best) diff = "Most " + (inv ? "money" : "collected") + " by age " + selectedAge;
+      else diff = money(best - v) + " behind the leader";
+      div.innerHTML =
+        '<div class="label">' + o.name + ' (' + o.tag + ')</div>' +
+        '<div class="value">' + money(v) + '</div>' +
+        (inv ? '<div class="sub">Invested at ' + rateText(state.settings.rate) + '; ' + money(plain[k]) + ' in checks</div>' : '') +
+        '<div class="diff">' + diff + '</div>';
+      el.appendChild(div);
+    });
+  }
+
+  function renderBreakEvens() {
+    var el = document.getElementById("be-rows");
+    if (!P.ok) { el.innerHTML = ""; return; }
+    var inv = state.settings.invest;
+    var plainPairs = breakEvens(collected);
+    var fmt = function (p) { return p.month ? monthText(p.month) + ", age " + p.age.toFixed(1) : "Not before " + MAX_AGE; };
+    var html = '<div class="be-row head"><div>Comparison</div><div>Checks only</div><div>' +
+      (inv ? "Invested at " + rateText(state.settings.rate) : "Invested (turn on above)") + '</div></div>';
+    plainPairs.forEach(function (p, idx) {
+      html += '<div class="be-row"><div class="pair">' + p.b.tag + ' passes ' + p.a.tag + '</div><div>' + fmt(p) + '</div><div>' +
+        (inv && investedPairs[idx] ? fmt(investedPairs[idx]) : "—") + '</div></div>';
+    });
+    el.innerHTML = html;
+  }
+
+  // ---------- Render ----------
+  function renderNumbers() {
+    P = compute(active());
+    document.getElementById("errors").textContent = P.errors.join(" ");
+    document.getElementById("placeholder-banner").hidden = !active().placeholder;
+    refresh();
+  }
+  function refresh() {
+    if (P.opts.length) buildSeries();
+    renderTimeline();
+    investedPairs = state.settings.invest && P.ok ? breakEvens(invested) : [];
+    setCaption();
+    renderLegend();
+    renderTotals();
+    renderBreakEvens();
+    draw();
+  }
+  function syncControls() {
+    document.getElementById("show-invest").checked = state.settings.invest;
+    document.getElementById("invest").classList.toggle("off", !state.settings.invest);
+    document.getElementById("rate").value = state.settings.rate;
+    document.getElementById("rate-range").value = Math.min(10, state.settings.rate);
+    document.getElementById("show-cola").checked = state.settings.cola;
+    document.getElementById("cola-box").classList.toggle("off", !state.settings.cola);
+    document.getElementById("cola").value = state.settings.colaRate;
+    document.getElementById("cola-range").value = Math.min(6, state.settings.colaRate);
+  }
+  function renderAll() {
+    renderPeople();
+    syncControls();
+    if (editorOpen) fillEditor();
+    renderNumbers();
+  }
+
+  // ---------- Controls ----------
+  var rateInput = document.getElementById("rate");
+  var rateRange = document.getElementById("rate-range");
+  function setRate(v, from) {
+    v = parseFloat(v);
+    if (isNaN(v)) return;
+    state.settings.rate = Math.max(0, Math.min(15, v));
+    if (from !== rateInput) rateInput.value = state.settings.rate;
+    if (from !== rateRange) rateRange.value = Math.min(10, state.settings.rate);
+    scheduleSave();
+    refresh();
+  }
+  rateInput.addEventListener("input", function () { setRate(rateInput.value, rateInput); });
+  rateInput.addEventListener("change", function () { rateInput.value = state.settings.rate; });
+  rateRange.addEventListener("input", function () { setRate(rateRange.value, rateRange); });
+  document.getElementById("show-invest").addEventListener("change", function (e) {
+    state.settings.invest = e.target.checked;
+    document.getElementById("invest").classList.toggle("off", !state.settings.invest);
+    scheduleSave();
+    refresh();
+  });
+  var colaInput = document.getElementById("cola");
+  var colaRange = document.getElementById("cola-range");
+  function setCola(v, from) {
+    v = parseFloat(v);
+    if (isNaN(v)) return;
+    state.settings.colaRate = Math.max(0, Math.min(10, v));
+    if (from !== colaInput) colaInput.value = state.settings.colaRate;
+    if (from !== colaRange) colaRange.value = Math.min(6, state.settings.colaRate);
+    scheduleSave();
+    refresh();
+  }
+  colaInput.addEventListener("input", function () { setCola(colaInput.value, colaInput); });
+  colaInput.addEventListener("change", function () { colaInput.value = state.settings.colaRate; });
+  colaRange.addEventListener("input", function () { setCola(colaRange.value, colaRange); });
+  document.getElementById("show-cola").addEventListener("change", function (e) {
+    state.settings.cola = e.target.checked;
+    document.getElementById("cola-box").classList.toggle("off", !state.settings.cola);
+    scheduleSave();
+    refresh();
+  });
+  document.querySelectorAll("#view-seg button").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      view = btn.getAttribute("data-view");
+      document.querySelectorAll("#view-seg button").forEach(function (b) {
+        b.setAttribute("aria-pressed", String(b === btn));
+      });
+      document.getElementById("chart-title").textContent = view === "total" ? "Total collected over time" : "Monthly income over time";
+      setCaption();
+      renderLegend();
+      draw();
+    });
+  });
+  document.getElementById("age").addEventListener("input", function (e) {
+    selectedAge = parseInt(e.target.value, 10);
+    renderTotals();
+  });
+  if (window.matchMedia) {
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
+  }
+
+  renderAll();
+  connect();
+})();
+</script>
+</body>
+</html>
